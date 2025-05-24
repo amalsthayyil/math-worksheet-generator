@@ -11,6 +11,7 @@ function App() {
   const { worksheetData, loading, error } = useWorksheetData();
   const [selectedGrade, setSelectedGrade] = useState('');
   const [selectedTopic, setSelectedTopic] = useState('');
+  const [selectedSubTopic, setSelectedSubTopic] = useState(''); // <--- NEW STATE
   const [filteredQuestions, setFilteredQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState([]); // Stores { questionIndex, answer, timeTaken }
@@ -19,17 +20,36 @@ function App() {
   const [quizFinished, setQuizFinished] = useState(false);
   const [score, setScore] = useState(0);
 
+  // Effect to filter questions based on Grade, Topic, and Sub-Topic
   useEffect(() => {
-    if (selectedGrade && selectedTopic && worksheetData) {
+    if (selectedGrade && selectedTopic && selectedSubTopic && worksheetData) { // <--- ADD selectedSubTopic
       const questionsForGrade = worksheetData[selectedGrade] || [];
       const questionsForTopic = questionsForGrade.filter(q => q.topic === selectedTopic);
-      setFilteredQuestions(questionsForTopic);
+      // <--- NEW FILTERING LOGIC
+      const questionsForSubTopic = questionsForTopic.filter(q => q.subTopic === selectedSubTopic);
+
+      setFilteredQuestions(questionsForSubTopic); // <--- USE NEWLY FILTERED QUESTIONS
       setCurrentQuestionIndex(0);
       setUserAnswers([]);
       setQuizFinished(false);
       setScore(0);
+    } else {
+      // Clear filtered questions if selections are incomplete
+      setFilteredQuestions([]);
     }
-  }, [selectedGrade, selectedTopic, worksheetData]);
+  }, [selectedGrade, selectedTopic, selectedSubTopic, worksheetData]); // <--- ADD selectedSubTopic to dependencies
+
+  // Handle changes in selected grade to reset topic/subtopic
+  useEffect(() => {
+    setSelectedTopic('');
+    setSelectedSubTopic('');
+  }, [selectedGrade]);
+
+  // Handle changes in selected topic to reset subtopic
+  useEffect(() => {
+    setSelectedSubTopic('');
+  }, [selectedTopic]);
+
 
   const handleStartQuiz = () => {
     setQuizStarted(true);
@@ -40,10 +60,8 @@ function App() {
     const timeTaken = (Date.now() - startTime) / 1000; // Time in seconds
     const currentQuestion = filteredQuestions[currentQuestionIndex];
 
-    // Placeholder for actual answer checking (you'll need to define correct answers in your Excel or derive them)
-    // For now, let's assume the correct answer is embedded or we'll mock it.
-    // In a real scenario, your Excel might have an "Correct-Answer" column.
-    const isCorrect = currentQuestion.question.includes(answer); // Very basic check
+    // Assuming 'correctAnswer' is now in your Excel and parsed
+    const isCorrect = String(answer).toLowerCase() === String(currentQuestion.correctAnswer).toLowerCase();
 
     setUserAnswers(prev => [
       ...prev,
@@ -53,6 +71,7 @@ function App() {
         correct: isCorrect,
         timeTaken: timeTaken,
         topic: currentQuestion.topic,
+        subTopic: currentQuestion.subTopic, // <--- ADD subTopic to userAnswers
         difficulty: currentQuestion.difficulty,
         averageTime: currentQuestion.averageTime
       }
@@ -75,6 +94,7 @@ function App() {
   const handleRetryQuiz = () => {
     setSelectedGrade('');
     setSelectedTopic('');
+    setSelectedSubTopic(''); // <--- RESET SUB-TOPIC
     setQuizStarted(false);
     setQuizFinished(false);
     setCurrentQuestionIndex(0);
@@ -91,9 +111,19 @@ function App() {
   }
 
   const grades = worksheetData ? Object.keys(worksheetData) : [];
+
+  // Get topics based on selected grade
   const topics = selectedGrade && worksheetData[selectedGrade]
     ? [...new Set(worksheetData[selectedGrade].map(q => q.topic))]
     : [];
+
+  // <--- NEW: Get sub-topics based on selected grade AND topic
+  const subTopics = selectedGrade && selectedTopic && worksheetData[selectedGrade]
+    ? [...new Set(worksheetData[selectedGrade]
+        .filter(q => q.topic === selectedTopic)
+        .map(q => q.subTopic))]
+    : [];
+
 
   return (
     <motion.div
@@ -108,12 +138,15 @@ function App() {
         <GradeTopicSelector
           grades={grades}
           topics={topics}
+          subTopics={subTopics} // <--- PASS SUB-TOPICS
           selectedGrade={selectedGrade}
           setSelectedGrade={setSelectedGrade}
           selectedTopic={selectedTopic}
           setSelectedTopic={setSelectedTopic}
+          selectedSubTopic={selectedSubTopic} // <--- PASS selectedSubTopic
+          setSelectedSubTopic={setSelectedSubTopic} // <--- PASS setSelectedSubTopic
           onStartQuiz={handleStartQuiz}
-          canStartQuiz={selectedGrade && selectedTopic && filteredQuestions.length > 0}
+          canStartQuiz={selectedGrade && selectedTopic && selectedSubTopic && filteredQuestions.length > 0} // <--- UPDATE canStartQuiz condition
         />
       )}
 
@@ -140,9 +173,9 @@ function App() {
         />
       )}
 
-      {/* Handle case where no questions are found for selected grade/topic */}
-      {!quizStarted && !quizFinished && selectedGrade && selectedTopic && filteredQuestions.length === 0 && (
-        <p className="no-questions-message">No questions found for the selected grade and topic. Please choose different options.</p>
+      {/* Handle case where no questions are found for selected grade/topic/subtopic */}
+      {!quizStarted && !quizFinished && selectedGrade && selectedTopic && selectedSubTopic && filteredQuestions.length === 0 && (
+        <p className="no-questions-message">No questions found for the selected grade, topic, and sub-topic. Please choose different options.</p>
       )}
     </motion.div>
   );

@@ -11,16 +11,19 @@ export const parseExcelFile = (arrayBuffer) => {
 
   workbook.SheetNames.forEach(sheetName => {
     const worksheet = workbook.Sheets[sheetName];
-    // Convert sheet to JSON, starting from the second row (skipping headers)
+    // Convert sheet to JSON
     const jsonSheet = XLSX.utils.sheet_to_json(worksheet);
 
-    // Map column names to more descriptive variable names if needed
+    // Map column names to more descriptive variable names
     const processedQuestions = jsonSheet.map(row => ({
       question: row.Question,
       topic: row.Topic,
+      subTopic: row['Sub-Topic'],
       difficulty: row['Difficulty-Level'],
       averageTime: row['Average-Time-To-Solve'],
-      // Add other properties as needed
+      // --- IMPORTANT CHANGE HERE ---
+      // Ensure correctAnswer is converted to a string and trimmed, handling potential null/undefined
+      correctAnswer: String(row['Correct-Answer'] || '').trim().toLowerCase()
     }));
     data[sheetName] = processedQuestions;
   });

@@ -13,10 +13,10 @@ const ResultsDisplay = ({ score, totalQuestions, userAnswers, onRetry }) => {
     userAnswers.forEach((answer, index) => {
       reportContent += `Question ${index + 1}: ${answer.question}\n`;
       reportContent += `Your Answer: ${answer.userAnswer}\n`;
-      // Note: You'd need to add 'correctAnswer' to userAnswers if you want to display it
       reportContent += `Correct: ${answer.correct ? 'Yes' : 'No'}\n`;
       reportContent += `Time Taken: ${answer.timeTaken.toFixed(2)} seconds\n`;
       reportContent += `Topic: ${answer.topic}\n`;
+      reportContent += `Sub-Topic: ${answer.subTopic}\n`; // <--- ADD SUB-TOPIC TO REPORT
       reportContent += `Difficulty: ${answer.difficulty}\n`;
       reportContent += `Average Time To Solve (from Excel): ${answer.averageTime} seconds\n`;
       reportContent += `--------------------------\n`;
@@ -51,6 +51,7 @@ const ResultsDisplay = ({ score, totalQuestions, userAnswers, onRetry }) => {
             <p><strong>Q{index + 1}:</strong> {answer.question}</p>
             <p>Your Answer: {answer.userAnswer} ({answer.correct ? 'Correct' : 'Incorrect'})</p>
             <p>Time Taken: {answer.timeTaken.toFixed(2)}s</p>
+            <p className="answer-details">Topic: {answer.topic}, Sub-Topic: {answer.subTopic}</p> {/* <--- DISPLAY SUB-TOPIC IN LIST */}
           </li>
         ))}
       </ul>
